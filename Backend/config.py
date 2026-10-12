@@ -37,4 +37,4 @@ class Config:
     CONF_THRESHOLD   = float(os.environ.get("CONF_THRESHOLD", "0.35"))   # min detection confidence
 
     # ── CORS ───────────────────────────────────────────────────────────────
-    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5500,http://127.0.0.1:5500").split(",")
+    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "https://real-time-traffic-recognition-syste.vercel.app").split(",")
