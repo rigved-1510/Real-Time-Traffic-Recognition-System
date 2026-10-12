@@ -1,6 +1,6 @@
 /* utils.js — Shared utilities: token storage, toasts, helpers */
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://real-time-traffic-recognition-system.onrender.com/api";
 
 // ── Token storage ────────────────────────────────────────────────────────────
 export const Auth = {

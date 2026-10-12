@@ -2,7 +2,7 @@
 
 import { Auth } from './utils.js';
 
-export const API_BASE = "http://localhost:5000/api";
+export const API_BASE = "https://real-time-traffic-recognition-system.onrender.com/api";
 
 /**
  * Standard fetch helper with Authorization header and automatic JSON serialization.
