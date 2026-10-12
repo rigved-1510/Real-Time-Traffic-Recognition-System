@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard — Real-time Traffic Sign Recognition System</title>
   <meta name="description" content="Real-time Traffic Sign Recognition System for IT303: Software Engineering."/>
-  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/style.css?v=20261012"/>
 </head>
 <body>
 <div id="toast-container"></div>
@@ -14,11 +17,11 @@
   <!-- ── Sidebar ────────────────────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="18" fill="hsl(192,100%,50%,0.15)"/>
-        <polygon points="18,6 30,27 6,27" fill="none" stroke="hsl(192,100%,50%)" stroke-width="2.5" stroke-linejoin="round"/>
-        <circle cx="18" cy="22" r="2" fill="hsl(192,100%,50%)"/>
-        <rect x="17" y="13" width="2" height="6" rx="1" fill="hsl(192,100%,50%)"/>
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none" style="color:var(--accent)">
+        <circle cx="18" cy="18" r="18" fill="var(--accent-subtle)"/>
+        <polygon points="18,6 30,27 6,27" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="18" cy="22" r="2" fill="currentColor"/>
+        <rect x="17" y="13" width="2" height="6" rx="1" fill="currentColor"/>
       </svg>
       <div>
         <div style="font-size:.9rem;font-weight:700;line-height:1.2">TrafficSign <span>System</span></div>
@@ -101,7 +104,7 @@
       </div>
 
       <!-- 2FA Warning Banner if 2FA is inactive -->
-      <div id="twofa-warning-alert" class="alert alert-warning hidden" style="margin-bottom:var(--space-5);display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-radius:var(--radius-md);flex-wrap:wrap;gap:12px">
+      <div id="twofa-warning-alert" class="alert alert-warning hidden" style="margin-bottom:var(--space-5);justify-content:space-between;align-items:center;padding:12px 18px;border-radius:var(--radius-md);flex-wrap:wrap;gap:12px">
         <div style="display:flex;align-items:center;gap:10px">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
           <div>

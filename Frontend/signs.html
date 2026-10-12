@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign Meaning Dictionary — Real-time Traffic Sign Recognition System</title>
   <meta name="description" content="Browse Indian traffic sign classes, categories, and legal meanings."/>
-  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/style.css?v=20261012"/>
   <style>
     .signs-grid {
       display: grid;
@@ -39,19 +42,19 @@
       flex-shrink: 0;
     }
     .sign-card-icon.mandatory {
-      background: hsl(354, 70%, 15%);
-      color: hsl(354, 100%, 65%);
-      border: 1px solid hsl(354, 70%, 30%);
+      background: var(--danger-subtle);
+      color: var(--danger);
+      border: 1px solid hsl(354, 70%, 78%);
     }
     .sign-card-icon.cautionary {
-      background: hsl(38, 70%, 15%);
-      color: hsl(38, 100%, 60%);
-      border: 1px solid hsl(38, 70%, 30%);
+      background: var(--amber-subtle);
+      color: var(--amber);
+      border: 1px solid hsl(220, 55%, 78%);
     }
     .sign-card-icon.informatory {
-      background: hsl(210, 70%, 15%);
-      color: hsl(210, 100%, 65%);
-      border: 1px solid hsl(210, 70%, 30%);
+      background: var(--accent-subtle);
+      color: var(--accent);
+      border: 1px solid hsl(220, 70%, 78%);
     }
   </style>
 </head>
@@ -62,11 +65,11 @@
   <!-- ── Sidebar ────────────────────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="18" fill="hsl(192,100%,50%,0.15)"/>
-        <polygon points="18,6 30,27 6,27" fill="none" stroke="hsl(192,100%,50%)" stroke-width="2.5" stroke-linejoin="round"/>
-        <circle cx="18" cy="22" r="2" fill="hsl(192,100%,50%)"/>
-        <rect x="17" y="13" width="2" height="6" rx="1" fill="hsl(192,100%,50%)"/>
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none" style="color:var(--accent)">
+        <circle cx="18" cy="18" r="18" fill="var(--accent-subtle)"/>
+        <polygon points="18,6 30,27 6,27" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="18" cy="22" r="2" fill="currentColor"/>
+        <rect x="17" y="13" width="2" height="6" rx="1" fill="currentColor"/>
       </svg>
       <div>
         <div style="font-size:.9rem;font-weight:700;line-height:1.2">TrafficSign <span>System</span></div>
