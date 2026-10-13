@@ -97,7 +97,6 @@ CREATE TABLE activity_logs (
         FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE SET NULL,
     CONSTRAINT fk_activity_logs_admin
         FOREIGN KEY (admin_id) REFERENCES users (user_id) ON DELETE SET NULL,
-    CONSTRAINT chk_activity_logs_actor CHECK (user_id IS NOT NULL OR admin_id IS NOT NULL),
     INDEX idx_activity_logs_user_id (user_id),
     INDEX idx_activity_logs_admin_id (admin_id),
     INDEX idx_activity_logs_ts (event_timestamp)

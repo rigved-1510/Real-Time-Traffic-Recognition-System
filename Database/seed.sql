@@ -3,7 +3,7 @@
 -- Run AFTER schema.sql
 -- ============================================================================
 
-USE traffic_sign_db;
+USE defaultdb;
 
 -- ============================================================================
 -- Sign Meaning Dictionary — Indian Traffic Signs
