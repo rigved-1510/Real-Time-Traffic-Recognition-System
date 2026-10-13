@@ -177,6 +177,7 @@ def _try_get_mysql_pool():
             database=Config.DB_NAME,
             charset="utf8mb4",
             autocommit=False,
+            ssl_disabled=False,
         )
         logger.info(f"Connected to MySQL on {Config.DB_HOST}:{Config.DB_PORT}")
         return _mysql_pool
