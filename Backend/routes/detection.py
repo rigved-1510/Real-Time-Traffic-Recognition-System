@@ -124,13 +124,14 @@ def upload_video():
     rec_id = create_recognition_session(
         g.user["user_id"], "upload", source_filename=file.filename
     )
+    
+    import cv2
 
     # Process video — sample 1 frame per second
     cap = cv2.VideoCapture(str(filepath))
     all_detections = []
     fps_sum, frame_count = 0.0, 0
 
-    import cv2
     video_fps = cap.get(cv2.CAP_PROP_FPS) or 25
     interval  = max(1, int(video_fps))
     idx       = 0
