@@ -125,42 +125,77 @@ def upload_video():
         g.user["user_id"], "upload", source_filename=file.filename
     )
     
-    import cv2
 
+    
     # Process video — sample 1 frame per second
+    import base64
+    import gc
+
     cap = cv2.VideoCapture(str(filepath))
     all_detections = []
     fps_sum, frame_count = 0.0, 0
 
-    video_fps = cap.get(cv2.CAP_PROP_FPS) or 25
-    interval  = max(1, int(video_fps))
-    idx       = 0
-    success   = True
+    try:
+        if not cap.isOpened():
+            return jsonify({"error": "Could not open uploaded video"}), 400
 
-    while success:
-        success, frame = cap.read()
-        if not success:
-            break
-        if idx % interval != 0:
+        video_fps = cap.get(cv2.CAP_PROP_FPS) or 25
+        interval = max(1, int(video_fps))
+        idx = 0
+
+        while True:
+            success, frame = cap.read()
+            if not success:
+                break
+
+            if idx % interval == 0:
+                # Resize large frames to reduce inference memory usage
+                height, width = frame.shape[:2]
+                max_dimension = 640
+
+                if max(height, width) > max_dimension:
+                    scale = max_dimension / max(height, width)
+                    frame = cv2.resize(
+                        frame,
+                        (int(width * scale), int(height * scale)),
+                        interpolation=cv2.INTER_AREA
+                    )
+
+                ok, buf = cv2.imencode(
+                    ".jpg", frame,
+                    [cv2.IMWRITE_JPEG_QUALITY, 70]
+                )
+
+                if ok:
+                    b64 = base64.b64encode(buf).decode("ascii")
+                    result = process_frame(b64)
+
+                    fps_sum += result.get("fps", 0)
+                    frame_count += 1
+
+                    for d in result.get("detections", []):
+                        bx, by, bw, bh = d["bbox"]
+                        save_detection(
+                            rec_id, d["class_id"],
+                            d["confidence"], bx, by, bw, bh
+                        )
+
+                        # Only retain the first 50 detections for the response
+                        if len(all_detections) < 50:
+                            all_detections.append(d)
+
+                    del b64, buf, result
+
+                del frame
+
             idx += 1
-            continue
 
-        import base64
-        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-        b64    = base64.b64encode(buf).decode()
-        result = process_frame(b64)
+    finally:
+        cap.release()
+        if filepath.exists():
+            filepath.unlink()
+        gc.collect()
 
-        fps_sum    += result.get("fps", 0)
-        frame_count += 1
-
-        for d in result.get("detections", []):
-            bx, by, bw, bh = d["bbox"]
-            save_detection(rec_id, d["class_id"],
-                           d["confidence"], bx, by, bw, bh)
-            all_detections.append(d)
-        idx += 1
-
-    cap.release()
 
     avg_fps = round(fps_sum / frame_count, 1) if frame_count else 0
     end_recognition_session(rec_id, avg_fps=avg_fps)
@@ -172,10 +207,3 @@ def upload_video():
         "detections_found": len(all_detections),
         "detections": all_detections[:50]   # first 50 for preview
     }), 200
-
-
-# Make cv2 available inside the function (already imported at top of file in real usage)
-try:
-    import cv2
-except ImportError:
-    pass
