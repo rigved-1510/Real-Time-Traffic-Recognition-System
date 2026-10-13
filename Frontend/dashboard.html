@@ -290,6 +290,7 @@
 
   // ── Live camera ───────────────────────────────────────────────────
   let stream = null, recSessionId = null, frameLoop = null;
+  let processingFrame = false;  
   let totalDetections = 0, frameCount = 0, fpsHistory = [];
 
   const videoEl      = document.getElementById('videoEl');
@@ -312,7 +313,9 @@
 
   async function startCamera() {
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { width:1280, height:720 } });
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width:640, height:480 }
+      });
       videoEl.srcObject = stream;
       await videoEl.play();
       canvasEl.width  = videoEl.videoWidth  || 1280;
@@ -330,7 +333,7 @@
       recSessionId = sess.rec_session_id;
       sessionBadge.textContent = `Session #${recSessionId}`;
 
-      frameLoop = setInterval(processLiveFrame, 200); // ~5 fps send rate
+      frameLoop = setInterval(processLiveFrame, 1000); // ~1 fps send rate 
     } catch (err) {
       showToast('Camera access denied: ' + err.message, 'error');
     }
@@ -357,39 +360,49 @@
     showToast('Session ended', 'info');
   }
 
-  async function processLiveFrame() {
-    if (!stream || !videoEl.videoWidth) return;
+  
+async function processLiveFrame() {
+  if (!stream || !videoEl.videoWidth || processingFrame) return;
+  processingFrame = true;
+
+  try {
     const ctx = canvasEl.getContext('2d');
     ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
     const b64 = canvasEl.toDataURL('image/jpeg', 0.7).split(',')[1];
 
-    try {
-      const result = await apiFetch('/detection/frame', {
-        method:'POST',
-        body:{ frame: b64, rec_session_id: recSessionId }
-      });
+    const result = await apiFetch('/detection/frame', {
+      method: 'POST',
+      body: { frame: b64, rec_session_id: recSessionId }
+    });
 
-      // Draw annotated frame
-      if (result.annotated_frame) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
-        img.src = 'data:image/jpeg;base64,' + result.annotated_frame;
+    if (result.annotated_frame) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+      img.src = 'data:image/jpeg;base64,' + result.annotated_frame;
+    }
+
+    const fps = result.fps || 0;
+    fpsBadge.textContent = `${fps} FPS`;
+    modeBadge.textContent = result.mode === 'real' ? 'REAL' : 'STUB';
+
+    fpsHistory.push(fps);
+    if (fpsHistory.length > 30) fpsHistory.shift();
+
+    if (result.detections?.length) {
+      totalDetections += result.detections.length;
+      detectCount.textContent = `${totalDetections} signs detected`;
+      result.detections.forEach(d => renderDetectionCard(d, detectPanel));
+
+      while (detectPanel.children.length > 20) {
+        detectPanel.removeChild(detectPanel.lastChild);
       }
-
-      const fps = result.fps || 0;
-      fpsBadge.textContent = `${fps} FPS`;
-      modeBadge.textContent = result.mode === 'real' ? 'REAL' : 'STUB';
-      fpsHistory.push(fps); if (fpsHistory.length > 30) fpsHistory.shift();
-
-      if (result.detections?.length) {
-        totalDetections += result.detections.length;
-        detectCount.textContent = `${totalDetections} signs detected`;
-        result.detections.forEach(d => renderDetectionCard(d, detectPanel));
-        // Keep max 20 cards
-        while (detectPanel.children.length > 20) detectPanel.removeChild(detectPanel.lastChild);
-      }
-    } catch {}
+    }
+  } catch (err) {
+    console.error('Frame processing failed:', err);
+  } finally {
+    processingFrame = false;
   }
+}
 
   function renderDetectionCard(d, container) {
     const pct = Math.round(d.confidence * 100);
