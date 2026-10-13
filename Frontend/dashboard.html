@@ -184,9 +184,11 @@
               <div class="upload-zone-icon">
                 <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
-              <h3>Drag & drop a video file</h3>
-              <p>or click to browse — MP4, AVI, MOV, MKV, WebM (max 100 MB)</p>
-              <input type="file" id="video-file-input" accept="video/*" style="display:none"/>
+              
+              <h3>Drag & drop a traffic sign photo</h3>
+              <p>or click to browse — JPG, JPEG, PNG (max 5 MB)</p>
+              <input type="file" id="video-file-input" accept="image/jpeg,image/png" style="display:none"/>
+
             </div>
 
             <div id="upload-progress" class="hidden" style="margin-top:var(--space-5)">
@@ -206,11 +208,11 @@
               <div class="stat-grid" style="margin-bottom:0">
                 <div class="stat-card">
                   <div class="stat-icon cyan"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M23 7 16 12 23 17V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
-                  <div><div class="stat-value" id="res-frames">0</div><div class="stat-label">Frames processed</div></div>
+                  <div><div class="stat-value" id="res-frames">0</div><div class="stat-label">Image processed</div></div>
                 </div>
                 <div class="stat-card">
                   <div class="stat-icon amber"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                  <div><div class="stat-value" id="res-fps">0</div><div class="stat-label">Avg FPS</div></div>
+                  <div><div class="stat-value" id="res-fps">0</div><div class="stat-label">Inference Time</div></div>
                 </div>
                 <div class="stat-card">
                   <div class="stat-icon green"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
@@ -422,73 +424,108 @@ async function processLiveFrame() {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // ── Upload ────────────────────────────────────────────────────────
-  const uploadZone  = document.getElementById('upload-zone');
-  const fileInput   = document.getElementById('video-file-input');
+ 
+  // ── Photo Upload ────────────────────────────────────────────────
+  const uploadZone = document.getElementById('upload-zone');
+  const fileInput = document.getElementById('video-file-input');
 
   uploadZone.addEventListener('click', () => fileInput.click());
-  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
-  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleUpload(e.dataTransfer.files[0]); });
-  fileInput.addEventListener('change', () => handleUpload(fileInput.files[0]));
+
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('drag-over');
+  });
+
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    handleUpload(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', () => {
+    handleUpload(fileInput.files[0]);
+    fileInput.value = '';
+  });
 
   async function handleUpload(file) {
     if (!file) return;
-    const allowed = ['video/mp4','video/avi','video/x-msvideo','video/quicktime','video/mkv','video/webm','video/x-matroska'];
-    if (!file.type.startsWith('video/')) { showToast('Please upload a video file.', 'error'); return; }
-    if (file.size > 100*1024*1024) { showToast('File too large (max 100 MB).', 'error'); return; }
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      showToast('Please upload a JPG or PNG photo.', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Photo too large (maximum 5 MB).', 'error');
+      return;
+    }
 
     document.getElementById('upload-progress').classList.remove('hidden');
     document.getElementById('upload-result').classList.add('hidden');
-    document.getElementById('upload-detections-panel').innerHTML = '<div style="text-align:center;padding:var(--space-6);color:var(--text-muted)"><p class="text-sm">Processing…</p></div>';
 
     const statusText = document.getElementById('upload-status-text');
     const pctEl = document.getElementById('upload-pct');
     const bar = document.getElementById('upload-progress-bar');
+    const panel = document.getElementById('upload-detections-panel');
 
-    // Fake progress while uploading
-    let progress = 0;
-    const ticker = setInterval(() => {
-      progress = Math.min(progress + 2, 90);
-      bar.style.width = progress + '%';
-      pctEl.textContent = progress + '%';
-      statusText.textContent = progress < 50 ? 'Uploading…' : 'Processing frames…';
-    }, 200);
+    statusText.textContent = 'Analyzing photo…';
+    pctEl.textContent = '0%';
+    bar.style.width = '0%';
+    panel.innerHTML = '<p class="text-sm">Analyzing photo…</p>';
 
     try {
       const fd = new FormData();
-      fd.append('video', file);
+      fd.append('image', file);
 
       const token = Auth.getToken();
-      const res = await fetch('https://real-time-traffic-recognition-system.onrender.com/api/detection/upload', {
-        method:'POST',
-        headers:{ 'Authorization': `Bearer ${token}` },
-        body: fd
-      });
+      const res = await fetch(
+        'https://real-time-traffic-recognition-system.onrender.com/api/detection/upload-image',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd
+        }
+      );
+
       const data = await res.json();
-      if (!res.ok) throw { message: data.error || 'Upload failed' };
 
-      clearInterval(ticker);
-      bar.style.width = '100%'; pctEl.textContent = '100%';
+      if (!res.ok) {
+        throw new Error(data.error || 'Photo analysis failed');
+      }
 
-      document.getElementById('res-frames').textContent     = data.frames_processed || 0;
-      document.getElementById('res-fps').textContent        = data.avg_fps || 0;
-      document.getElementById('res-detections').textContent = data.detections_found || 0;
+      bar.style.width = '100%';
+      pctEl.textContent = '100%';
+      statusText.textContent = 'Analysis complete';
+
+      document.getElementById('res-frames').textContent = '1';
+      document.getElementById('res-fps').textContent =
+        data.inference_time_ms != null
+          ? `${data.inference_time_ms} ms`
+          : '—';
+      document.getElementById('res-detections').textContent =
+        data.detections_found ?? data.detections?.length ?? 0;
+
       document.getElementById('upload-result').classList.remove('hidden');
 
-      const panel = document.getElementById('upload-detections-panel');
       panel.innerHTML = '';
       if (data.detections?.length) {
         data.detections.forEach(d => renderDetectionCard(d, panel));
       } else {
-        panel.innerHTML = '<p class="text-sm text-muted text-center" style="padding:var(--space-6)">No signs detected</p>';
+        panel.innerHTML =
+          '<p class="text-sm text-muted text-center" style="padding:var(--space-6)">No signs detected</p>';
       }
-      showToast('Video processed successfully!', 'success');
+
+      showToast('Photo analyzed successfully!', 'success');
     } catch (err) {
-      clearInterval(ticker);
-      showToast(err.message || 'Upload failed', 'error');
+      statusText.textContent = 'Analysis failed';
+      showToast(err.message || 'Photo analysis failed', 'error');
     }
   }
+
 </script>
 </body>
 </html>

@@ -2,6 +2,9 @@
 import os
 from pathlib import Path
 import cv2
+import base64
+import time
+import numpy as np
 
 from flask import Blueprint, request, jsonify, g
 from config import Config
@@ -104,7 +107,7 @@ def process_live_frame():
 @detection_bp.route("/upload", methods=["POST"])
 @require_auth
 def upload_video():
-    """Upload a video file; run pipeline on sampled frames; return summary."""
+    """Upload a photo file; run pipeline on sampled frames; return summary."""
     if "video" not in request.files:
         return jsonify({"error": "No video file provided"}), 400
 
@@ -207,3 +210,103 @@ def upload_video():
         "detections_found": len(all_detections),
         "detections": all_detections[:50]   # first 50 for preview
     }), 200
+
+
+@detection_bp.route("/upload-image", methods=["POST"])
+@require_auth
+def upload_image():
+    """Upload a single photo and detect traffic signs."""
+    if "image" not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+
+    image_file = request.files["image"]
+
+    if not image_file.filename or not allowed_file(
+        image_file.filename
+    ):
+        return jsonify({"error": "Unsupported image format"}), 415
+
+    extension = image_file.filename.rsplit(".", 1)[1].lower()
+    if extension not in ("jpg", "jpeg", "png"):
+        return jsonify({"error": "Only JPG and PNG images are allowed"}), 415
+
+    # Read at most 5 MB plus one byte to enforce the limit
+    raw = image_file.read(5 * 1024 * 1024 + 1)
+    if len(raw) > 5 * 1024 * 1024:
+        return jsonify({"error": "Image exceeds the 5 MB limit"}), 413
+
+    # Decode and resize the image before inference
+    image = cv2.imdecode(
+        np.frombuffer(raw, dtype=np.uint8),
+        cv2.IMREAD_COLOR
+    )
+    del raw
+
+    if image is None:
+        return jsonify({"error": "Could not read image"}), 400
+
+    height, width = image.shape[:2]
+    max_dimension = 640
+
+    if max(height, width) > max_dimension:
+        scale = max_dimension / max(height, width)
+        image = cv2.resize(
+            image,
+            (int(width * scale), int(height * scale)),
+            interpolation=cv2.INTER_AREA
+        )
+
+    ok, buffer = cv2.imencode(
+        ".jpg", image,
+        [cv2.IMWRITE_JPEG_QUALITY, 75]
+    )
+    del image
+
+    if not ok:
+        return jsonify({"error": "Could not process image"}), 400
+
+    encoded_image = base64.b64encode(buffer).decode("ascii")
+    del buffer
+
+    start_time = time.perf_counter()
+    result = process_frame(encoded_image)
+    inference_time_ms = round(
+        (time.perf_counter() - start_time) * 1000, 1
+    )
+    del encoded_image
+
+    if "error" in result:
+        return jsonify(result), 400
+
+    detections = result.get("detections", [])
+
+    # Save the photo analysis in the existing session/history system
+    rec_id = create_recognition_session(
+        g.user["user_id"], "upload",
+        source_filename=image_file.filename
+    )
+
+    try:
+        for detection in detections:
+            bx, by, bw, bh = detection["bbox"]
+            save_detection(
+                rec_id,
+                detection["class_id"],
+                detection["confidence"],
+                bx, by, bw, bh
+            )
+
+        end_recognition_session(rec_id)
+
+    except Exception:
+        end_recognition_session(rec_id)
+        raise
+
+    return jsonify({
+        "rec_session_id": rec_id,
+        "frames_processed": 1,
+        "inference_time_ms": inference_time_ms,
+        "detections_found": len(detections),
+        "detections": detections[:50]
+    }), 200
+
