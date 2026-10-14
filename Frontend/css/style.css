@@ -53,15 +53,62 @@
 
 /* ── Reset ──────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; scroll-behavior: smooth; }
-
+html,
 body {
-  font-family: var(--font-sans);
-  background: var(--bg-base);
-  color: var(--text-primary);
-  line-height: 1.6;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.users-page,
+.users-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.users-table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+.users-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+    padding: 10px 8px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: middle;
+}
+
+.users-table td:last-child {
+    white-space: normal;
+}
+
+.user-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+@media (max-width: 768px) {
+    .users-table th,
+    .users-table td {
+        padding: 7px 4px;
+        font-size: 12px;
+    }
+
+    .user-actions button {
+        max-width: 100%;
+        white-space: normal;
+    }
 }
 
 a { color: var(--accent); text-decoration: none; transition: color var(--trans-fast); }
@@ -461,3 +508,32 @@ tr:hover td { background: var(--bg-hover); }
 .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-secondary); font-size: .85rem; cursor: pointer; transition: background var(--trans-fast), color var(--trans-fast), border-color var(--trans-fast); }
 .page-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
 .page-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+
+/* Compact, responsive refinements; retain the existing theme tokens and palette. */
+.page-body { padding: clamp(14px, 2vw, 26px); }
+.card { margin-bottom: 16px; }
+.card-header { padding-bottom: 12px; }
+.sign-card { padding: 16px; }
+.detection-card { padding: 12px 14px; }
+@media (max-width: 640px) {
+  .page-body { padding: 12px; }
+  .auth-card { margin: 12px !important; padding: 20px !important; }
+  .landing-container { gap: 18px; }
+  .card { border-radius: 12px; }
+  .table-wrap { overflow-x: auto; }
+}
+
+
+.site-footer {
+    width: 100%;
+    text-align: center;
+    padding: 20px 16px;
+    margin-top: 24px;
+    box-sizing: border-box;
+    position: static;
+}
+
+.site-footer p {
+    margin: 6px 0;
+}

@@ -10,6 +10,22 @@
   <meta http-equiv="Expires" content="0" />
   <link rel="stylesheet" href="css/style.css?v=20261012" />
   <style>
+    .instructor-row {
+      margin-top: var(--space-4);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border);
+    }
+    .instructor-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: var(--space-2);
+    }
+    .instructor-row .member-item {
+      max-width: 320px;
+    }
     .landing-container {
       width: 100%;
       max-width: 1160px;
@@ -150,6 +166,32 @@
       align-items: center;
       gap: 6px;
     }
+    /* Keep landing content above the footer */
+body.auth-page {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 100vh;
+}
+
+.landing-container {
+  flex: 1 0 auto;
+  min-height: auto;
+  box-sizing: border-box;
+}
+
+.landing-footer {
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 16px;
+  margin-top: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
   </style>
 </head>
 <body class="auth-page">
@@ -207,6 +249,17 @@
           </div>
         </div>
       </div>
+            <!-- Course Instructor -->
+        <div class="instructor-row">
+          <div class="instructor-label">Course Instructor</div>
+          <div class="member-item">
+            <div class="member-avatar">JC</div>
+            <div>
+              <div class="member-name">Jaidhar C. D.</div>
+              <div class="member-roll">IT303: Software Engineering</div>
+            </div>
+          </div>
+        </div>
     </div><!-- /.landing-hero -->
 
     <!-- Right Column: Sign In Card -->
@@ -222,8 +275,6 @@
           </svg>
           <div class="auth-logo-text">IT303 - <span>Traffic Sign Recognition</span></div>
         </div>
-
-        <h2 class="auth-title" style="font-size:1.3rem;margin-top:4px">System Sign In</h2>
 
         <div id="alert-box" class="alert alert-danger hidden" role="alert">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -256,6 +307,7 @@
             Sign In
           </button>
         </form>
+        <p class="text-sm text-muted" style="text-align:center;margin-top:12px"><a href="reset-password.html">Forgot password?</a></p>
 
         <div class="divider">or</div>
 
@@ -309,16 +361,13 @@
 
         const data = await apiFetch('/auth/login', { method: 'POST', body });
 
-        if (data.requires_otp) {
-          sessionStorage.setItem('tvision_pending_uid', data.user_id);
-          window.location.href = 'verify-otp.html';
+        if (data.requires_otp || data.requires_setup_2fa) {
+          sessionStorage.setItem('tvision_challenge_token', data.challenge_token);
+          if (data.requires_setup_2fa) window.location.href = 'setup-2fa.html';
+          else window.location.href = 'verify-otp.html';
         } else {
-          Auth.setToken(data.token);
-          Auth.setUser(data.user);
-          showToast('Welcome back!', 'success');
-          setTimeout(() => {
-            window.location.href = data.user.role === 'admin' ? 'admin/index.html' : 'dashboard.html';
-          }, 400);
+          // Defensive fallback: the API must never issue a session before TOTP verification.
+          throw new Error('Server returned an unexpected authentication response.');
         }
       } catch (err) {
         showError(err.message || 'Login failed. Please try again.');
@@ -328,9 +377,9 @@
       }
     });
   </script>
-  <footer class="landing-footer">
+<footer class="landing-footer">
     <p>Under the Guidance of Professor Jadhar CD</p>
     <p>&copy; 2026 TrafficVision. All rights reserved.</p>
-  </footer>
+</footer>
 </body>
 </html>
