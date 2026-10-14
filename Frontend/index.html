@@ -361,12 +361,19 @@ body.auth-page {
 
         const data = await apiFetch('/auth/login', { method: 'POST', body });
 
-        if (data.requires_otp || data.requires_setup_2fa) {
-          sessionStorage.setItem('tvision_challenge_token', data.challenge_token);
-          if (data.requires_setup_2fa) window.location.href = 'setup-2fa.html';
-          else window.location.href = 'verify-otp.html';
+        if (data.token) {
+          // Normal login (no 2FA) — store session and redirect to dashboard.
+          Auth.setToken(data.token);
+          if (data.user) Auth.setUser(data.user);
+          window.location.href = 'dashboard.html';
+        } else if (data.requires_otp) {
+          // 2FA required — store user_id for the OTP verification step.
+          sessionStorage.setItem('tvision_pending_user_id', data.user_id);
+          window.location.href = 'verify-otp.html';
+        } else if (data.requires_setup_2fa) {
+          sessionStorage.setItem('tvision_pending_user_id', data.user_id);
+          window.location.href = 'setup-2fa.html';
         } else {
-          // Defensive fallback: the API must never issue a session before TOTP verification.
           throw new Error('Server returned an unexpected authentication response.');
         }
       } catch (err) {

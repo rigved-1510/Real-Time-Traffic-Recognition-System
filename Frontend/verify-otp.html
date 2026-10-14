@@ -71,7 +71,7 @@
 <script type="module">
   import { Auth, apiFetch, showToast } from './js/utils.js';
 
-  const userId = sessionStorage.getItem('tvision_pending_uid');
+  const userId = sessionStorage.getItem('tvision_pending_user_id');
   if (!userId) window.location.href = 'index.html';
 
   // OTP keyboard navigation
@@ -108,7 +108,7 @@
     try {
       const data = await apiFetch('/auth/verify-otp', { method:'POST', body:{ user_id: parseInt(userId), otp } });
       Auth.setToken(data.token); Auth.setUser(data.user);
-      sessionStorage.removeItem('tvision_pending_uid');
+      sessionStorage.removeItem('tvision_pending_user_id');
       showToast('Verified! Welcome back.', 'success');
       setTimeout(() => window.location.href = data.user.role === 'admin' ? 'admin/index.html' : 'dashboard.html', 500);
     } catch (err) {
@@ -134,7 +134,7 @@
     try {
       const data = await apiFetch('/auth/use-backup-code', { method:'POST', body:{ user_id: parseInt(userId), code } });
       Auth.setToken(data.token); Auth.setUser(data.user);
-      sessionStorage.removeItem('tvision_pending_uid');
+      sessionStorage.removeItem('tvision_pending_user_id');
       showToast('Backup code accepted!', 'success');
       setTimeout(() => window.location.href = 'dashboard.html', 500);
     } catch (err) {
